@@ -25,8 +25,7 @@ List<Map<String, Object?>> mergeRaws(List<Map<String, Object?>> rawResults) {
         ...list,
         {
           'ID': element['ID'],
-          'checkoutTime':
-              '${element['date']! as String} ${element['time']! as String}',
+          'checkoutTime': '${element['date']! as String} ${element['time']! as String}',
           'tableID': element['tableID'],
           'status': element['status'],
           'discountRate': element['discountRate'],
@@ -98,8 +97,7 @@ class SQLite implements DatabaseConnectionInterface {
               isDeleted    BOOLEAN
             )
             ''');
-          await db.execute(
-              'CREATE INDEX ${orderTable}Idx ON $orderTable (date, ID)');
+          await db.execute('CREATE INDEX ${orderTable}Idx ON $orderTable (date, ID)');
           await db.execute('''
             CREATE TABLE $dishTable(
               ID             INTEGER PRIMARY KEY AUTOINCREMENT, 
@@ -120,8 +118,7 @@ class SQLite implements DatabaseConnectionInterface {
               FOREIGN KEY(dishID) REFERENCES $dishTable(ID)
             )
             ''');
-          await db.execute(
-              'CREATE INDEX ${lineItemTable}Idx ON $lineItemTable (orderID)');
+          await db.execute('CREATE INDEX ${lineItemTable}Idx ON $lineItemTable (orderID)');
           await db.execute('''
             CREATE TABLE $journalTable(
               ID           INTEGER PRIMARY KEY AUTOINCREMENT, 
@@ -131,8 +128,7 @@ class SQLite implements DatabaseConnectionInterface {
               amount       REAL
             )
             ''');
-          await db.execute(
-              'CREATE INDEX ${journalTable}Idx ON $journalTable (date, ID)');
+          await db.execute('CREATE INDEX ${journalTable}Idx ON $journalTable (date, ID)');
           if (kDebugMode) {
             print('Table Creation complete');
           }
@@ -140,8 +136,7 @@ class SQLite implements DatabaseConnectionInterface {
         version: 1,
       );
       if (kDebugMode) {
-        print(
-            'Initiating sqlite database at path: ${await getDatabasesPath()}');
+        print('Initiating sqlite database at path: ${await getDatabasesPath()}');
       }
       db = dtb;
       _completer.complete(dtb.isOpen);
@@ -267,8 +262,7 @@ class OrderSQL extends RIDRepository<Order>
   }
 }
 
-class JournalSQL extends RIRepository<Journal>
-    with Readable<Journal>, Insertable<Journal> {
+class JournalSQL implements RIRepository<Journal> {
   final Database db;
   JournalSQL(this.db);
 
@@ -280,10 +274,7 @@ class JournalSQL extends RIRepository<Journal>
     final rawResults = await db.query(
       journalTable,
       where: 'date BETWEEN ? AND ?',
-      whereArgs: [
-        Common.extractYYYYMMDD(from as DateTime),
-        Common.extractYYYYMMDD(to as DateTime)
-      ],
+      whereArgs: [Common.extractYYYYMMDD(from as DateTime), Common.extractYYYYMMDD(to as DateTime)],
     );
 
     if (rawResults.isEmpty) {
@@ -320,7 +311,7 @@ class JournalSQL extends RIRepository<Journal>
 }
 
 class MenuSQL extends RIUDRepository<Dish>
-    with Readable<Dish>, Updatable<Dish>, Insertable<Dish>, Deletable<Dish> {
+    implements Readable<Dish>, Updatable<Dish>, Insertable<Dish>, Deletable<Dish> {
   final Database db;
 
   MenuSQL(this.db);
@@ -341,8 +332,7 @@ class MenuSQL extends RIUDRepository<Dish>
     } else if (from != null && to == null) {
       menu = await db.query(dishTable, where: 'ID = ?', whereArgs: [from]);
     } else {
-      menu = await db
-          .query(dishTable, where: 'ID BETWEEN ? AND ?', whereArgs: [from, to]);
+      menu = await db.query(dishTable, where: 'ID BETWEEN ? AND ?', whereArgs: [from, to]);
     }
     if (menu.isEmpty) {
       if (kDebugMode) print('\x1B[94mmenu not found in sqlite\x1B[0m');
@@ -355,8 +345,7 @@ class MenuSQL extends RIUDRepository<Dish>
   @override
   Future<Dish> insert(Dish value) async {
     final json = value.toJson()..remove('ID');
-    final id = await db.insert(dishTable, json,
-        conflictAlgorithm: ConflictAlgorithm.replace);
+    final id = await db.insert(dishTable, json, conflictAlgorithm: ConflictAlgorithm.replace);
     return Dish.fromJson({
       ...json,
       ...{'ID': id}
@@ -366,16 +355,21 @@ class MenuSQL extends RIUDRepository<Dish>
   @override
   Future<void> update(Dish value) async {
     final json = value.toJson()..remove('ID');
-    final r = await db
-        .update(dishTable, json, where: 'ID = ?', whereArgs: [value.id]);
+    final r = await db.update(dishTable, json, where: 'ID = ?', whereArgs: [value.id]);
     if (r <= 0) {
       throw 'Can not update a non-existing dish with ID = ${value.id}';
     }
   }
+
+  @override
+  Future<void> upsert(Dish value) {
+    // TODO: implement upsert
+    throw UnimplementedError();
+  }
 }
 
 class NodeSQL extends RIUDRepository<Node>
-    with Readable<Node>, Updatable<Node>, Insertable<Node>, Deletable<Node> {
+    implements Readable<Node>, Updatable<Node>, Insertable<Node>, Deletable<Node> {
   final Database db;
 
   NodeSQL(this.db);
@@ -393,8 +387,7 @@ class NodeSQL extends RIUDRepository<Node>
     } else if (from != null && to == null) {
       nodes = await db.query(nodeTable, where: 'ID = ?', whereArgs: [from]);
     } else {
-      nodes = await db
-          .query(nodeTable, where: 'ID BETWEEN ? AND ?', whereArgs: [from, to]);
+      nodes = await db.query(nodeTable, where: 'ID BETWEEN ? AND ?', whereArgs: [from, to]);
     }
     return nodes.map<Node>((node) => Node.fromJson(node)).toList();
   }
@@ -402,8 +395,7 @@ class NodeSQL extends RIUDRepository<Node>
   @override
   Future<Node> insert(Node value) async {
     final json = value.toJson()..remove('ID');
-    final id = await db.insert(nodeTable, json,
-        conflictAlgorithm: ConflictAlgorithm.fail);
+    final id = await db.insert(nodeTable, json, conflictAlgorithm: ConflictAlgorithm.fail);
     return Node.fromJson({
       ...value.toJson(),
       ...{'ID': id}
@@ -421,5 +413,11 @@ class NodeSQL extends RIUDRepository<Node>
       where: 'ID = ?',
       whereArgs: [value.id],
     );
+  }
+
+  @override
+  Future<void> upsert(Node value) {
+    // TODO: implement upsert
+    throw UnimplementedError();
   }
 }

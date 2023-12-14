@@ -4,9 +4,21 @@ import 'package:flutter/foundation.dart';
 typedef DatabaseConnectionInterface = Control;
 
 /// Readable & Insertable
-abstract class RIRepository<T> = Readable<T> with Insertable<T>;
-abstract class RIDRepository<T> = RIRepository<T> with Deletable<T>;
-abstract class RIUDRepository<T> = RIDRepository<T> with Updatable<T>;
+// abstract class RIRepository<T> = Readable<T> with Insertable<T>;
+// abstract class RIDRepository<T> = RIRepository<T> with Deletable<T>;
+// abstract class RIUDRepository<T> = RIDRepository<T> with Updatable<T>;
+
+abstract class RIRepository<T> implements Readable<T>, Insertable<T> {
+  // ... implement your read and write methods using the Readable and Writable classes
+}
+
+abstract class RIDRepository<T> implements RIRepository<T>, Deletable<T> {
+  // ... implement your read, write, and delete methods
+}
+
+abstract class RIUDRepository<T> implements RIDRepository<T>, Updatable<T> {
+  // ... implement your read, write, delete, and update methods
+}
 
 /// Operations on a more generic/global level
 class Control {
@@ -37,6 +49,5 @@ abstract class Deletable<T> {
 
 abstract class Updatable<T> {
   Future<void> update(T value);
-
   Future<void> upsert(T value) => throw UnimplementedError();
 }
